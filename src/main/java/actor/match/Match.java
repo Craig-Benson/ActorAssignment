@@ -9,26 +9,25 @@ import akka.actor.typed.javadsl.Receive;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Match extends AbstractBehavior<MatchProtocol.Command> {
 
-    private List<MatchProtocol.Incident> incidentList = new ArrayList<>();
-
-
+    private Map<Integer,MatchProtocol.Incident> incidentMap = new HashMap<>();
 
     public static Behavior<MatchProtocol.Command> create(String id, MatchProtocol.Incident incident) {
-        return Behaviors.setup(context -> new Match(context, id,incident));
+        return Behaviors.setup(context -> new Match(context,id, incident));
     }
 
     private final String id;
-    private final MatchProtocol.Incident incident;
 
     private Match(ActorContext<MatchProtocol.Command> context, String id, MatchProtocol.Incident incident) {
         super(context);
         this.id = id;
-        this.incident = incident;
 
+        incidentMap.put(incident.getEventId(),incident);
     }
 
     @Override
@@ -40,28 +39,15 @@ public class Match extends AbstractBehavior<MatchProtocol.Command> {
     private Behavior<MatchProtocol.Command> onUpdate(MatchProtocol.Update command) {
 
         getContext().getLog().info("Hello {}!{}", id, command.getIncident());
+        int key = command.getIncident().getEventId();
 
-//        for (MatchProtocol.Incident incident: incidentList) {
-        if(incidentList.contains(command.getIncident()))
+        if(incidentMap.containsKey(key))
         {
-            System.out.println("in");
+           incidentMap.replace(key,command.getIncident());
         }else{
             System.out.println("out");
-            incidentList.add(command.getIncident());
+            incidentMap.put(key,command.getIncident());
         }
-
-//            if(command.getIncident().getEventId() == incident.getEventId()){
-//
-//                incidentList.remove(incident);
-//                incidentList.add(incidentList.indexOf(incident),command.getIncident());
-//            }else{
-//                incidentList.add(command.getIncident());
-//            }
-
-
-//        }
-
-
 
         return this;
     }
